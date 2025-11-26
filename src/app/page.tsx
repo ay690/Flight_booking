@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { Header } from '@/components/header';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { Card, CardContent } from '@/components/ui/card';
+import { BookingForm } from '@/components/booking-form';
 import { Button } from '@/components/ui/button';
 import { Award, ShieldCheck, Tag, Twitter, Facebook, Instagram } from 'lucide-react';
 import { destinations } from '@/lib/data';
@@ -49,8 +50,8 @@ export default function Home() {
           </div>
         </section>
 
-        <section>
-          {/* Booking section  */}
+        <section className='p-2 relative z-20 -mt-25 md:-mt-32'>
+          <BookingForm />
         </section>
 
         <section className="py-16 md:py-24 bg-background p-1">
