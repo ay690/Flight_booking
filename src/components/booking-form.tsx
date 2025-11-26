@@ -1,5 +1,6 @@
 "use client";
 
+import * as React from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
@@ -70,7 +71,7 @@ const formSchema = z.object({
     path: ["returnDate"],
   });
 
-export function BookingForm() {
+export function BookingForm({ prefillTo }: { prefillTo?: string }) {
   const router = useRouter();
   const dispatch = useDispatch<AppDispatch>();
 
@@ -85,6 +86,12 @@ export function BookingForm() {
   });
 
   const tripType = useWatch({ control: form.control, name: "tripType" });
+
+  React.useEffect(() => {
+    if (prefillTo) {
+      form.setValue("to", prefillTo);
+    }
+  }, [prefillTo, form]);
 
   function onSubmit(values: z.infer<typeof formSchema>) {
     dispatch(setBooking(values));
@@ -139,7 +146,7 @@ export function BookingForm() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>From</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder="Select departure" />
@@ -182,7 +189,7 @@ export function BookingForm() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>To</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder="Select destination" />

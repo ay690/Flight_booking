@@ -1,5 +1,8 @@
+"use client";
+
 import Image from 'next/image';
 import Link from 'next/link';
+import { useRef, useState } from 'react';
 import { Header } from '@/components/header';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { Card, CardContent } from '@/components/ui/card';
@@ -9,6 +12,8 @@ import { Award, ShieldCheck, Tag, Twitter, Facebook, Instagram } from 'lucide-re
 import { destinations } from '@/lib/data';
 
 export default function Home() {
+  const formSectionRef = useRef<HTMLDivElement | null>(null);
+  const [prefillTo, setPrefillTo] = useState<string | undefined>(undefined);
   const heroImage = PlaceHolderImages.find((img) => img.id === 'hero-background');
   const popularDestImages = {
     'BOM': PlaceHolderImages.find((img) => img.id === 'dest-bom'),
@@ -50,8 +55,8 @@ export default function Home() {
           </div>
         </section>
 
-        <section className='p-2 relative z-20 -mt-25 md:-mt-32'>
-          <BookingForm />
+        <section ref={formSectionRef} id="booking-form" className='p-2 relative z-20 -mt-25 md:-mt-32'>
+          <BookingForm prefillTo={prefillTo} />
         </section>
 
         <section className="py-16 md:py-24 bg-background p-1">
@@ -89,7 +94,17 @@ export default function Home() {
                             <CardContent className="p-6">
                                 <h3 className="text-xl font-bold mb-2">{dest.label}</h3>
                                 <p className="text-muted-foreground mb-4">Starting from <span className="font-bold text-primary">₹4,800</span></p>
-                                <Button className="w-full cursor-pointer">Book Now</Button>
+                                <Button
+                                  className="w-full cursor-pointer"
+                                  onClick={() => {
+                                    setPrefillTo(dest.value);
+                                    if (formSectionRef.current) {
+                                      formSectionRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                                    }
+                                  }}
+                                >
+                                  Book Now
+                                </Button>
                             </CardContent>
                         </Card>
                       )
