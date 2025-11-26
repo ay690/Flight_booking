@@ -10,13 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { PlaneTakeoff, PlaneLanding, IndianRupee } from "lucide-react";
 import { format } from "date-fns";
-
-// Dummy flights that would be fetched from an API in a real app
-const availableFlights = [
-  { id: 'SR101', departure: '08:00', arrival: '10:05', duration: '2h 5m', price: 5400 },
-  { id: 'SR102', departure: '12:30', arrival: '14:45', duration: '2h 15m', price: 6200 },
-  { id: 'SR103', departure: '18:45', arrival: '21:00', duration: '2h 15m', price: 4800 },
-];
+import { availableFlights } from "@/lib/data";
 
 export default function FlightSearchPage() {
   const booking = useSelector((state: RootState) => state.booking.currentBooking);
