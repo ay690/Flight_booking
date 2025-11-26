@@ -10,3 +10,4 @@ export const destinations = [
   { value: 'GOI', label: 'Goa (GOI)' },
   { value: 'COK', label: 'Kochi (COK)' },
 ];
+
