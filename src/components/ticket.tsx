@@ -19,7 +19,6 @@ export default function Ticket({ booking, passenger }: TicketProps) {
   const gate = autoGate;
   const boardingTime = booking.flightDetails ? (parseInt(booking.flightDetails.departure.split(':')[0]) - 1).toString().padStart(2, '0') + ':' + booking.flightDetails.departure.split(':')[1] : '18:30';
 
-
   return (
     <div className="bg-card text-card-foreground rounded-lg shadow-lg overflow-hidden flex flex-col md:flex-row">
       <div className="p-6 grow">
