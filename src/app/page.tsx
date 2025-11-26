@@ -89,7 +89,7 @@ export default function Home() {
                             <CardContent className="p-6">
                                 <h3 className="text-xl font-bold mb-2">{dest.label}</h3>
                                 <p className="text-muted-foreground mb-4">Starting from <span className="font-bold text-primary">₹4,800</span></p>
-                                <Button className="w-full">Book Now</Button>
+                                <Button className="w-full cursor-pointer">Book Now</Button>
                             </CardContent>
                         </Card>
                       )
