@@ -52,166 +52,158 @@ const applyFallbackThemeToElement = (el: HTMLElement) => {
   };
 };
 
+/**
+ * Downloads the given HTML element as a PDF file
+ * @param element The HTML element to convert to PDF
+ * @param filename The name of the output PDF file
+ */
 export const downloadPDF = async (element: HTMLElement, filename: string) => {
-  // Apply fallbacks to the live DOM on the root so variables resolve across the subtree
-  const restoreLive = applyFallbackThemeToElement(document.documentElement);
-  // Mark the element so we can target it in the cloned DOM
-  element.setAttribute('data-capture-root', '');
+  // Create container and clone outside the try block for finally
+  const container = document.createElement('div');
+  let restoreLive: (() => void) | null = null;
+  
   try {
-    // Ensure web fonts are loaded before rendering (if supported by the browser)
-    try {
-      if (typeof (document as Document & { fonts?: { ready?: Promise<unknown> } }).fonts?.ready !== 'undefined') {
-        const ready = (document as Document & { fonts?: { ready?: Promise<unknown> } }).fonts?.ready;
-        if (ready) await ready;
+    console.log('Starting PDF generation for:', filename);
+    
+    // Set up container styles
+    container.style.position = 'fixed';
+    container.style.top = '0';
+    container.style.left = '0';
+    container.style.width = '100%';
+    container.style.zIndex = '9999';
+    container.style.visibility = 'hidden';
+    container.style.pointerEvents = 'none';
+    
+    // Clone the element
+    const elementClone = element.cloneNode(true) as HTMLElement;
+    container.appendChild(elementClone);
+    document.body.appendChild(container);
+    
+    // Force layout and styles to be applied
+    await new Promise(resolve => setTimeout(resolve, 100));
+    
+    // Get dimensions
+    const rect = elementClone.getBoundingClientRect();
+    const width = Math.max(rect.width, 1);
+    const height = Math.max(rect.height, 1);
+    
+    console.log('Element dimensions:', { width, height });
+
+    // Create canvas
+    const canvas = document.createElement('canvas');
+    const scale = 2;
+    canvas.width = width * scale;
+    canvas.height = height * scale;
+    
+    // Set white background
+    const ctx = canvas.getContext('2d');
+    if (!ctx) throw new Error('Could not get canvas context');
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Apply fallback styles
+    restoreLive = applyFallbackThemeToElement(document.documentElement);
+
+    // Define print styles
+    const printStyles = `
+      * { 
+        -webkit-print-color-adjust: exact !important; 
+        color-adjust: exact !important;
+        box-sizing: border-box;
       }
-    } catch {}
+      body, html { 
+        margin: 0 !important; 
+        padding: 0 !important;
+        width: 100% !important;
+        height: auto !important;
+        background: white !important;
+      }
+      ${elementClone.tagName.toLowerCase()} {
+        width: 100% !important;
+        height: auto !important;
+        margin: 0 !important;
+        padding: 0 !important;
+      }
+    `;
 
-    // Determine capture size explicitly to avoid zero-size/blank canvases
-    const rect = element.getBoundingClientRect();
-    const width = Math.max(element.scrollWidth, element.clientWidth, Math.ceil(rect.width));
-    const height = Math.max(element.scrollHeight, element.clientHeight, Math.ceil(rect.height));
-
-    const canvas = await html2canvas(element, {
-      scale: 2,
+    // Render to canvas
+    console.log('Starting html2canvas rendering...');
+    const canvasFromElement = await html2canvas(elementClone, {
+      scale,
       useCORS: true,
-      foreignObjectRendering: false,
+      allowTaint: true,
       backgroundColor: '#ffffff',
-      width,
-      height,
-      onclone: (doc) => {
-        // Ensure fallbacks are also present in the cloned tree used for rendering
-        const root = doc.documentElement as HTMLElement;
-        Object.keys(FALLBACK_VARS).forEach((k) => {
-          root.style.setProperty(`--${k}`, FALLBACK_VARS[k]);
-        });
-        const body = doc.body as HTMLBodyElement;
-        if (body) body.style.backgroundColor = '#ffffff';
-
-        // Inject targeted overrides for common opacity utilities used in the UI
-        // to force rgba fallbacks and avoid lab/oklch in computed styles
-        const style = doc.createElement('style');
-        style.setAttribute('data-html2canvas-fallbacks', '');
-        style.textContent = `
-          /* Universal safety net to avoid any oklab/oklch from theme */
-          * { color: #0a0a0a !important; background-color: #ffffff !important; border-color: #e5e7eb !important; box-shadow: none !important; }
-          svg, svg * { fill: #171717 !important; stroke: #171717 !important; }
-
-          /* E-ticket and confirmation page */
-          [class*="bg-primary/10"] { background-color: rgba(23, 23, 23, 0.10) !important; }
-          [class*="bg-muted/50"] { background-color: rgba(245, 245, 245, 0.50) !important; }
-          [class*="text-primary/80"] { color: rgba(23, 23, 23, 0.80) !important; }
-          [class*="text-foreground/80"] { color: rgba(10, 10, 10, 0.80) !important; }
-
-          [class*="border-muted-foreground/30"] { border-color: rgba(107, 114, 128, 0.30) !important; }
-
-          /* General utility fallbacks commonly used in the capture */
-          [class*="bg-background"] { background-color: #ffffff !important; }
-          [class*="bg-card"] { background-color: #ffffff !important; }
-          [class*="text-card-foreground"] { color: #0a0a0a !important; }
-          [class*="text-foreground"] { color: #0a0a0a !important; }
-          [class*="text-primary"] { color: #171717 !important; }
-          [class*="text-muted-foreground"] { color: #6b7280 !important; }
-          [class*="bg-popover"] { background-color: #ffffff !important; }
-          [class*="text-popover-foreground"] { color: #0a0a0a !important; }
-          [class*="border-foreground"] { border-color: #0a0a0a !important; }
-          [class*="border-muted"] { border-color: #e5e7eb !important; }
-        `;
-        doc.head.appendChild(style);
-
-        // Normalize computed colors to inline rgb values for every node in the capture tree
-        try {
-          const win = doc.defaultView as Window;
-          const captureRoot = doc.querySelector('[data-capture-root]') as HTMLElement | null;
-          if (win && captureRoot) {
-            const cssProps: string[] = [
-              'color',
-              'background-color',
-              'border-top-color',
-              'border-right-color',
-              'border-bottom-color',
-              'border-left-color',
-              'outline-color',
-              'text-decoration-color',
-              'box-shadow',
-              'background-image',
-              'filter',
-              'border-image',
-            ];
-
-            const all = captureRoot.querySelectorAll<HTMLElement>('*');
-            all.forEach((node) => {
-              const cs = win.getComputedStyle(node);
-              cssProps.forEach((prop) => {
-                if (prop === 'background-image') {
-                  node.style.setProperty('background-image', 'none');
-                  return;
-                }
-                if (prop === 'filter' || prop === 'border-image') {
-                  node.style.setProperty(prop, 'none');
-                  return;
-                }
-                const val = cs.getPropertyValue(prop);
-                if (val) node.style.setProperty(prop, val);
-              });
-              // Ensure shorthand background uses the flat color only
-              const bg = cs.getPropertyValue('background-color');
-              if (bg) node.style.setProperty('background', bg);
-            });
-
-            // Handle SVG-specific color attributes
-            const svgs = captureRoot.querySelectorAll<SVGElement>('svg, svg *');
-            svgs.forEach((el) => {
-              const cs = win.getComputedStyle(el);
-              const fill = cs.getPropertyValue('fill');
-              const stroke = cs.getPropertyValue('stroke');
-              if (fill && fill !== 'none') el.setAttribute('fill', fill);
-              if (stroke && stroke !== 'none') el.setAttribute('stroke', stroke);
-            });
-          }
-        } catch {}
+      logging: true,
+      removeContainer: false,
+      onclone: (clonedDoc, clonedElement) => {
+        // Ensure the element is visible for rendering
+        clonedElement.style.visibility = 'visible';
+        clonedElement.style.opacity = '1';
+        
+        // Add print styles
+        const style = document.createElement('style');
+        style.textContent = printStyles;
+        clonedDoc.head.appendChild(style);
       },
     });
 
-    // Create an A4 PDF and scale the image to fit width, adding pages as needed
-    const pdf = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
+    console.log('html2canvas rendering complete');
+
+    // Create PDF
+    const pdf = new jsPDF({
+      orientation: width > height ? 'landscape' : 'portrait',
+      unit: 'mm',
+      format: 'a4',
+    });
+
+    // Calculate dimensions
     const pageWidth = pdf.internal.pageSize.getWidth();
     const pageHeight = pdf.internal.pageSize.getHeight();
-
-    const imgData = canvas.toDataURL('image/png');
-    const imgWidthPx = canvas.width;
-    const imgHeightPx = canvas.height;
-
-    // Convert px to mm using 96 DPI -> 25.4 mm per inch
-    const pxToMm = (px: number) => (px * 25.4) / 96;
-    const imgWidthMm = pxToMm(imgWidthPx);
-    const imgHeightMm = pxToMm(imgHeightPx);
-
-    const scale = pageWidth / imgWidthMm;
-    const renderWidth = pageWidth;
-    const renderHeight = imgHeightMm * scale;
-
-    let remaining = renderHeight;
-    let position = 0;
-
-    // If single page fits
-    if (renderHeight <= pageHeight) {
-      pdf.addImage(imgData, 'PNG', 0, 0, renderWidth, renderHeight);
-    } else {
-      // Multi-page: draw slices by shifting Y position
-      // We reuse the same image, adjusting y each page; jsPDF will clip automatically
-      // Start at top
-      pdf.addImage(imgData, 'PNG', 0, position, renderWidth, renderHeight);
-      remaining -= pageHeight;
-      while (remaining > -pageHeight) {
-        pdf.addPage();
-        position = - (renderHeight - remaining);
-        pdf.addImage(imgData, 'PNG', 0, position, renderWidth, renderHeight);
-        remaining -= pageHeight;
-      }
+    
+    // Convert canvas to image
+    const imgData = canvasFromElement.toDataURL('image/png');
+    
+    // Calculate aspect ratio
+    const imgAspectRatio = canvasFromElement.width / canvasFromElement.height;
+    let imgWidth = pageWidth - 20; // 10mm margin on each side
+    let imgHeight = imgWidth / imgAspectRatio;
+    
+    // If the image is too tall for one page, scale it down
+    if (imgHeight > pageHeight - 20) {
+      imgHeight = pageHeight - 20;
+      imgWidth = imgHeight * imgAspectRatio;
     }
+    
+    // Center the image on the page
+    const x = (pageWidth - imgWidth) / 2;
+    const y = (pageHeight - imgHeight) / 2;
+    
+    console.log('Adding image to PDF...');
+    pdf.addImage(
+      imgData,
+      'PNG',
+      x,
+      y,
+      imgWidth,
+      imgHeight
+    );
+
+    console.log('Saving PDF...');
     pdf.save(filename);
+    console.log('PDF saved successfully');
+    
+    return true;
+  } catch (error) {
+    console.error('Error in downloadPDF:', error);
+    throw new Error(`Failed to generate PDF: ${error instanceof Error ? error.message : String(error)}`);
   } finally {
-    element.removeAttribute('data-capture-root');
-    restoreLive();
+    // Clean up container if it exists in the DOM
+    if (container && container.parentNode) {
+      document.body.removeChild(container);
+    }
+    // Restore original styles if they were modified
+    if (restoreLive) {
+      restoreLive();
+    }
   }
 };

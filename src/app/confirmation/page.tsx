@@ -1,12 +1,15 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Download, Plane, Luggage, Mail, Loader2, IndianRupee } from "lucide-react";
+import { Download, Plane, Luggage, Mail, Loader2, IndianRupee, CheckCircle2 } from "lucide-react";
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store/store';
 import { Header } from "@/components/header";
 import Ticket from "@/components/ticket";
+import { TicketPrint } from "@/components/ticket-print";
 import BaggageTag from "@/components/baggage-tag";
+import { BaggageTagPrint } from "@/components/baggage-tag-print";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
@@ -20,9 +23,12 @@ export default function ConfirmationPage() {
   const bookings = useSelector((state: RootState) => state.booking.bookings);
   const booking = bookings[bookings.length - 1]; // Get the most recent booking
   const router = useRouter();
-  const [isDownloading, setIsDownloading] = useState(false);
-  const ticketsRef = useRef<HTMLDivElement>(null);
-  const baggageTagsRef = useRef<HTMLDivElement>(null);
+  const [downloadState, setDownloadState] = useState<{
+    type: 'ticket' | 'baggage' | null;
+    error: string | null;
+  }>({ type: null, error: null });
+  
+  const isDownloading = downloadState.type !== null;
 
   useEffect(() => {
     if (!booking) {
@@ -30,25 +36,52 @@ export default function ConfirmationPage() {
     }
   }, [booking, router]);
 
-  const handleDownload = async (type: 'ticket' | 'tag') => {
-    const element = type === 'ticket' ? ticketsRef.current : baggageTagsRef.current;
-    const fileName = type === 'ticket' ? 'SkyRoute-Tickets.pdf' : 'SkyRoute-Baggage-Tags.pdf';
-    
-    if (!element) {
-        toast.error('Could not find content to download.');
-        return;
-    }
-    
-    setIsDownloading(true);
-    toast(`Downloading ${type}s...`, { description: "Your download will start shortly." });
-
+  const handleDownload = async (type: 'ticket' | 'baggage') => {
     try {
-      await downloadPDF(element, fileName);
+      setDownloadState({ type, error: null });
+      
+      // Add a small delay to ensure the UI updates
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      const elementId = type === 'ticket' ? 'ticket-print' : 'baggage-print';
+      const element = document.getElementById(elementId);
+      
+      if (!element) {
+        throw new Error(`Could not find ${type} element to print`);
+      }
+      
+      // Make the element temporarily visible for rendering
+      const originalDisplay = element.style.display;
+      element.style.display = 'block';
+      
+      try {
+        const fileName = `${type}-${new Date().toISOString().split('T')[0]}.pdf`;
+        console.log(`Starting download of ${fileName}...`);
+        
+        await downloadPDF(element, fileName);
+        
+        toast.success('Download complete!', { 
+          description: `${type === 'ticket' ? 'E-ticket' : 'Baggage tag'} has been downloaded.`,
+          icon: <CheckCircle2 className="h-4 w-4 text-green-500" />
+        });
+      } finally {
+        // Restore original display state
+        element.style.display = originalDisplay;
+      }
     } catch (error) {
-      console.error(error);
-      toast.error('Download failed', { description: 'There was a problem generating the PDF.' });
+      console.error('PDF generation failed:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to generate PDF';
+      setDownloadState(prev => ({ ...prev, error: errorMessage }));
+      
+      toast.error('Download failed', { 
+        description: errorMessage,
+        action: {
+          label: 'Retry',
+          onClick: () => handleDownload(type),
+        },
+      });
     } finally {
-      setIsDownloading(false);
+      setDownloadState(prev => ({ ...prev, type: null }));
     }
   };
   
@@ -56,12 +89,42 @@ export default function ConfirmationPage() {
     return null;
   }
   
-  const flightPrice = booking.flightDetails?.price || 0;
-  const totalFlightCost = flightPrice * booking.passengers.length;
-  const totalSeatCost = booking.passengers.reduce((acc, p) => acc + (p.seat?.price || 0), 0);
+  const flightPrice = (booking as any).flightDetails?.price || 0;
+  const totalFlightCost = flightPrice * (booking.passengers?.length || 0);
+  const totalSeatCost = (booking.passengers || []).reduce((acc: number, p: any) => acc + ((p.seat?.price) || 0), 0);
   const totalBaggageCost = (booking.bags || 0) * BAGGAGE_PRICE_PER_UNIT;
   const grandTotal = totalFlightCost + totalSeatCost + totalBaggageCost;
 
+  /**
+   * Prepare a booking object tailored for print components. We supply fallbacks (empty strings)
+   * for fields that the print components expect, and normalize ids to strings.
+   * We cast to `any` when passing down to the print components to avoid strict mismatch errors.
+   */
+  const bookingForPrint = {
+    // copy everything we can
+    ...booking,
+    // ensure id/bookingId exist as strings
+    id: (booking as any).id ? String((booking as any).id) : ((booking as any).bookingId ? String((booking as any).bookingId) : ''),
+    bookingId: (booking as any).bookingId ? String((booking as any).bookingId) : ((booking as any).id ? String((booking as any).id) : ''),
+    // ensure flight metadata exist
+    departureTime: (booking as any).departureTime ?? '',
+    arrivalTime: (booking as any).arrivalTime ?? '',
+    flightNumber: (booking as any).flightNumber ?? '',
+    pnr: (booking as any).pnr ?? '',
+  };
+
+  // Helper to normalize passenger for print usage
+  const makePrintablePassenger = (p: any) => {
+    return {
+      ...p,
+      id: p.id !== undefined && p.id !== null ? String(p.id) : '',
+      firstName: p.firstName ?? '',
+      lastName: p.lastName ?? '',
+      name: p.name ?? `${p.firstName ?? ''} ${p.lastName ?? ''}`.trim(),
+      // convert null seat -> undefined, and convert seat.id to string if present
+      seat: p.seat ? { ...p.seat, id: p.seat.id !== undefined && p.seat.id !== null ? String(p.seat.id) : String(p.seat.id ?? '') } : undefined
+    };
+  };
 
   return (
     <div className="flex flex-col min-h-screen bg-background">
@@ -122,34 +185,92 @@ export default function ConfirmationPage() {
               <div className="space-y-4">
                 <div className="flex justify-between items-center">
                   <h3 className="font-semibold">E-Ticket(s)</h3>
-                  <Button variant="outline" onClick={() => handleDownload('ticket')} disabled={isDownloading}>
-                    {isDownloading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4"/>}
+                  <Button 
+                    variant="outline" 
+                    onClick={() => handleDownload('ticket')} 
+                    disabled={downloadState.type !== null}
+                  >
+                    {downloadState.type === 'ticket' ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <Download className="mr-2 h-4 w-4"/>
+                    )}
                     Download All
                   </Button>
                 </div>
-                <div ref={ticketsRef} className="space-y-4 bg-background">
-                  {booking.passengers.map(p => p.seat && <Ticket key={p.id} booking={booking} passenger={p} />)}
+                <div className="space-y-4 bg-background">
+                  {booking.passengers.map((p: any) => p.seat && <Ticket key={p.id} booking={booking} passenger={p} />)}
                 </div>
               </div>
               <div className="space-y-4">
                 <div className="flex justify-between items-center">
                   <h3 className="font-semibold">Baggage Tag(s)</h3>
-                  <Button variant="outline" onClick={() => handleDownload('tag')} disabled={(booking.bags || 0) === 0 || isDownloading}>
-                    {isDownloading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4"/>}
+                  <Button 
+                    variant="outline" 
+                    onClick={() => handleDownload('baggage')} 
+                    disabled={(booking.bags || 0) === 0 || downloadState.type !== null}
+                  >
+                    {downloadState.type === 'baggage' ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <Download className="mr-2 h-4 w-4"/>
+                    )}
                     Download All
                   </Button>
                 </div>
                 {(booking.bags || 0) > 0 ? (
-                  <div ref={baggageTagsRef} className="space-y-4 bg-background">
-                    {Array.from({ length: booking.bags || 0 }).map((_, i) => <BaggageTag key={i} booking={booking} passenger={booking.passengers[0]} tagNumber={i+1} />)}
+                  <div className="space-y-4 bg-background">
+                    {Array.from({ length: booking.bags || 0 }).map((_, i) => (
+                      <BaggageTag key={i} booking={booking} passenger={booking.passengers[0]} tagNumber={i+1} />
+                    ))}
                   </div>
                 ) : (
                   <Card className="flex flex-col items-center justify-center p-8 text-center border-dashed">
-                      <Luggage className="h-10 w-10 text-muted-foreground mb-2"/>
-                      <p className="text-muted-foreground">No baggage added.</p>
+                    <Luggage className="h-10 w-10 text-muted-foreground mb-2"/>
+                    <p className="text-muted-foreground">No baggage added.</p>
                   </Card>
                 )}
               </div>
+            </div>
+
+            {/* Print-safe containers (hidden from view) */}
+            <div className="hidden print-safe">
+              <div id="ticket-print" className="p-4 bg-white">
+                {booking.passengers.map((p: any, index: number) => {
+                  // Only print passengers that have a seat (same as visible list)
+                  if (!p.seat) return null;
+                  const printablePassenger = makePrintablePassenger(p);
+                  return (
+                    <div key={index} className="mb-8">
+                      <TicketPrint
+                        passenger={printablePassenger as any}
+                        booking={bookingForPrint as any}
+                      />
+                    </div>
+                  );
+                })}
+              </div>
+
+              {(booking.bags || 0) > 0 && (
+                <div id="baggage-print" className="p-4 mt-8 bg-white">
+                  {booking.passengers.flatMap((p: any, idx: number) => 
+                    Array.from({ length: booking.bags || 0 }).map((_, i) => {
+                      const printablePassenger = makePrintablePassenger(p);
+                      return (
+                        <div key={`${idx}-${i}`} className="mb-6">
+                          <BaggageTagPrint
+                            data={{
+                              passenger: printablePassenger,
+                              booking: bookingForPrint,
+                              tagNumber: i + 1
+                            } as any}
+                          />
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              )}
             </div>
           </div>
 
