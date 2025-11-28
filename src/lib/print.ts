@@ -13,24 +13,54 @@ export const printElement = (element: HTMLElement, documentTitle: string) => {
             @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
             body {
               font-family: 'Inter', sans-serif;
-              margin: 1.5rem;
+              margin: 0;
               -webkit-print-color-adjust: exact;
               color-adjust: exact;
             }
             @page {
-              size: auto;
-              margin: 1.5cm 0;
+              size: A4;
+              margin: 0;
             }
-            .bg-background { background-color: hsl(0 0% 100%); }
-            .bg-card { background-color: hsl(0 0% 100%); }
-            .text-card-foreground { color: hsl(224 71% 4%); }
-            .bg-primary { background-color: hsl(231 48% 48%); }
-            .text-primary-foreground { color: hsl(0 0% 100%); }
-            .text-muted-foreground { color: hsl(220 9% 45%); }
-            .text-primary { color: hsl(231 48% 48%); }
-            .border-primary { border-color: hsl(231 48% 48%); }
+            .print-container {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 1rem;
+            }
+            .print-container > * {
+                width: 900px;
+                max-width: 95%;
+                break-inside: avoid;
+                page-break-inside: avoid;
+            }
+
+            @media print {
+                html, body {
+                    width: 210mm;
+                    height: 297mm;
+                    margin: 0;
+                    padding: 0;
+                }
+                .print-container > * {
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    width: 100%;
+                    height: 100vh;
+                    page-break-after: always;
+                    box-sizing: border-box;
+                }
+            }
+            .bg-background { background-color: hsl(0, 0%, 100%); }
+            .bg-card { background-color: hsl(0, 0%, 100%); }
+            .text-card-foreground { color: hsl(224, 71%, 4%); }
+            .bg-primary { background-color: hsl(231, 48%, 48%); }
+            .text-primary-foreground { color: hsl(0, 0%, 100%); }
+            .text-muted-foreground { color: hsl(220, 9%, 45%); }
+            .text-primary { color: hsl(231, 48%, 48%); }
+            .border-primary { border-color: hsl(231, 48%, 48%); }
             .border-dashed { border-style: dashed; }
-            .border-muted-foreground\/30 { border-color: hsla(220, 9%, 45%, 0.3); }
+            .border-muted-foreground\\/30 { border-color: hsla(220, 9%, 45%, 0.3); }
             .shadow-lg { box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1); }
             .rounded-lg { border-radius: 0.5rem; }
             .overflow-hidden { overflow: hidden; }
@@ -40,6 +70,7 @@ export const printElement = (element: HTMLElement, documentTitle: string) => {
             .space-y-4 > :not([hidden]) ~ :not([hidden]) { margin-top: 1rem; }
             .flex-grow { flex-grow: 1; }
             .justify-between { justify-content: space-between; }
+            .justify-around { justify-content: space-around; }
             .items-center { align-items: center; }
             .font-bold { font-weight: 700; }
             .text-lg { font-size: 1.125rem; line-height: 1.75rem; }
@@ -55,11 +86,9 @@ export const printElement = (element: HTMLElement, documentTitle: string) => {
             .truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
             .font-medium { font-weight: 500; }
             .font-mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
-            .w-32 { width: 8rem; }
+            .md\\:w-32 { width: 8rem; }
             .border-l { border-left-width: 1px; }
             .text-center { text-align: center; }
-            .h-16 { height: 4rem; }
-            .w-16 { width: 4rem; }
             .h-12 { height: 3rem; }
             .w-full { width: 100%; }
             .mt-1 { margin-top: 0.25rem; }
@@ -72,8 +101,9 @@ export const printElement = (element: HTMLElement, documentTitle: string) => {
             .p-2 { padding: 0.5rem; }
             .justify-center { justify-content: center; }
             .tracking-tighter { letter-spacing: -0.05em; }
+            .tracking-wider { letter-spacing: 0.05em; }
             .mt-2 { margin-top: 0.5rem; }
-            .bg-muted\/50 { background-color: hsla(220, 13%, 91%, 0.5); }
+            .bg-muted\\/50 { background-color: hsla(220, 13%, 91%, 0.5); }
             svg {
                 display: inline-block;
                 width: 1em;
@@ -85,7 +115,9 @@ export const printElement = (element: HTMLElement, documentTitle: string) => {
           </style>
         </head>
         <body>
-          ${printableContent}
+          <div class="print-container">
+            ${printableContent}
+          </div>
         </body>
       </html>
     `);

@@ -47,38 +47,40 @@ export default function Ticket({ booking, passenger }: TicketProps) {
               <p className="text-xs text-muted-foreground">Date</p>
               <p className="font-medium">{format(new Date(booking.departureDate), "MMMM dd, yyyy")}</p>
             </div>
-             <div>
+            <div>
               <p className="text-xs text-muted-foreground">PNR</p>
               <p className="font-mono font-medium">{pnr}</p>
             </div>
           </div>
         </div>
-
+        <div className="text-xs text-muted-foreground mt-4">
+            <p><strong>Note:</strong> Please be at the gate 30 minutes before boarding. Have a pleasant flight!</p>
+        </div>
         <div className="border-t border-dashed border-muted-foreground/30 mt-4 pt-2 grid grid-cols-3 gap-4 text-sm text-center">
-            <div>
-                <p className="text-xs text-muted-foreground">Flight</p>
-                <p className="font-bold">{flightNumber}</p>
-            </div>
-            <div>
-                <p className="text-xs text-muted-foreground">Departs</p>
-                <p className="font-bold">{booking.flightDetails?.departure}</p>
-            </div>
-            <div>
-                <p className="text-xs text-muted-foreground">Boarding</p>
-                <p className="font-bold">{boardingTime}</p>
-            </div>
+          <div>
+            <p className="text-xs text-muted-foreground">Flight</p>
+            <p className="font-bold">{flightNumber}</p>
+          </div>
+          <div>
+            <p className="text-xs text-muted-foreground">Departs</p>
+            <p className="font-bold">{booking.flightDetails?.departure}</p>
+          </div>
+          <div>
+            <p className="text-xs text-muted-foreground">Boarding</p>
+            <p className="font-bold">{boardingTime}</p>
+          </div>
         </div>
       </div>
 
       {/* Stub part */}
       <div className="bg-primary text-primary-foreground md:w-32 flex flex-col items-center justify-around p-4 border-l border-dashed border-muted-foreground/30">
         <div className="text-center">
-            <p className="text-xs font-bold tracking-wider">SEAT</p>
-            <p className="text-3xl font-bold">{passenger.seat?.id}</p>
+          <p className="text-xs font-bold tracking-wider">SEAT</p>
+          <p className="text-3xl font-bold">{passenger.seat?.id}</p>
         </div>
-         <div className="text-center">
-            <p className="text-xs font-bold tracking-wider">GATE</p>
-            <p className="text-3xl font-bold">{gate}</p>
+        <div className="text-center">
+          <p className="text-xs font-bold tracking-wider">GATE</p>
+          <p className="text-3xl font-bold">{gate}</p>
         </div>
         <Barcode className="h-12 w-full" />
       </div>

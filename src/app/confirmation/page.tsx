@@ -26,9 +26,7 @@ export default function ConfirmationPage() {
   const baggageTagsRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (!booking) {
-      router.replace("/");
-    }
+    if (!booking) router.replace("/");
   }, [booking, router]);
 
   const handleDownload = async (type: "ticket" | "tag") => {
@@ -42,9 +40,7 @@ export default function ConfirmationPage() {
 
     setIsDownloading(true);
 
-    toast(`Preparing ${type}s...`, {
-      description: "Your browser's print dialog will open shortly.",
-    });
+    toast(`Preparing ${type}s... Your browser's print dialog will open shortly.`);
 
     try {
       printElement(element, fileName);
@@ -103,6 +99,7 @@ export default function ConfirmationPage() {
                     </p>
                   </div>
                 </div>
+
                 <div className="flex items-center gap-4">
                   <div className="p-3 bg-primary/10 rounded-full text-primary">
                     <Luggage />
@@ -119,7 +116,6 @@ export default function ConfirmationPage() {
 
               <div className="bg-muted/50 p-4 rounded-lg space-y-2">
                 <h3 className="font-semibold">Cost Breakdown</h3>
-
                 <div className="flex justify-between text-sm">
                   <span>Flights Total:</span>
                   <span>
@@ -159,18 +155,12 @@ export default function ConfirmationPage() {
 
           <div>
             <h2 className="text-2xl font-bold mb-4">Your Documents</h2>
-
             <div className="grid md:grid-cols-2 gap-8">
-              {/* TICKETS */}
+              {/* ---- TICKETS ---- */}
               <div className="space-y-4">
                 <div className="flex justify-between items-center">
                   <h3 className="font-semibold">E-Ticket(s)</h3>
-
-                  <Button
-                    variant="outline"
-                    onClick={() => handleDownload("ticket")}
-                    disabled={isDownloading}
-                  >
+                  <Button variant="outline" onClick={() => handleDownload("ticket")} disabled={isDownloading}>
                     {isDownloading ? (
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     ) : (
@@ -187,11 +177,10 @@ export default function ConfirmationPage() {
                 </div>
               </div>
 
-              {/* BAGGAGE TAGS */}
+              {/* ---- BAGGAGE TAGS ---- */}
               <div className="space-y-4">
                 <div className="flex justify-between items-center">
                   <h3 className="font-semibold">Baggage Tag(s)</h3>
-
                   <Button
                     variant="outline"
                     onClick={() => handleDownload("tag")}
@@ -226,7 +215,6 @@ export default function ConfirmationPage() {
               </div>
             </div>
           </div>
-
         </div>
       </main>
     </div>

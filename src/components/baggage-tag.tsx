@@ -35,6 +35,9 @@ export default function BaggageTag({ booking, passenger, tagNumber }: BaggageTag
                 <p className="font-mono font-medium">{pnr}</p>
             </div>
         </div>
+       <div className="text-xs text-muted-foreground mt-2">
+            <p><strong>Note:</strong> This is not the airline luggage liability limit.</p>
+        </div>
       </div>
       <div className="bg-muted/50 w-24 flex flex-col items-center justify-center p-2 border-l">
         <Barcode className="h-12 w-full text-foreground/80" />
