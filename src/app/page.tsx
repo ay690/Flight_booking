@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import Image from 'next/image';
 import Link from 'next/link';
@@ -10,8 +10,9 @@ import { BookingForm } from '@/components/booking-form';
 import { Button } from '@/components/ui/button';
 import { Award, ShieldCheck, Tag, Twitter, Facebook, Instagram } from 'lucide-react';
 import { destinations } from '@/lib/data';
+import withAuth from '@/components/auth/withAuth';
 
-export default function Home() {
+function Home() {
   const formSectionRef = useRef<HTMLDivElement | null>(null);
   const [prefillTo, setPrefillTo] = useState<string | undefined>(undefined);
   const heroImage = PlaceHolderImages.find((img) => img.id === 'hero-background');
@@ -145,3 +146,5 @@ export default function Home() {
     </div>
   );
 }
+
+export default withAuth(Home);

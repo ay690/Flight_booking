@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import * as React from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -7,7 +7,7 @@ import { z } from "zod";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
 import { CalendarIcon, ArrowRightLeft, Users, Minus, Plus } from "lucide-react";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -40,7 +40,7 @@ import { toast } from "sonner";
 
 import { destinations } from "@/lib/data";
 import { setBooking } from "@/store/slices/bookingSlice";
-import { AppDispatch } from "@/store/store";
+import { AppDispatch, RootState } from "@/store/store";
 
 const formSchema = z.object({
     from: z.string().min(1, "Please select a departure location."),
@@ -74,6 +74,7 @@ const formSchema = z.object({
 export function BookingForm({ prefillTo }: { prefillTo?: string }) {
   const router = useRouter();
   const dispatch = useDispatch<AppDispatch>();
+  const { isAuthenticated } = useSelector((state: RootState) => state.auth);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -94,6 +95,11 @@ export function BookingForm({ prefillTo }: { prefillTo?: string }) {
   }, [prefillTo, form]);
 
   function onSubmit(values: z.infer<typeof formSchema>) {
+    if (!isAuthenticated) {
+      toast.error("Please sign in to book a flight.");
+      router.push('/auth');
+      return;
+    }
     dispatch(setBooking(values));
 
     // Sonner toast

@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import Link from 'next/link';
 import { Plane, Menu, X } from 'lucide-react';
@@ -6,10 +6,19 @@ import { Button } from '@/components/ui/button';
 import { useEffect, useState } from 'react';
 import { Sheet, SheetContent, SheetTrigger } from './ui/sheet';
 import { cn } from '@/lib/utils';
+import { useSelector, useDispatch } from 'react-redux';
+import { RootState } from '@/store/store';
+import { logout } from '@/store/slices/authSlice';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { useRouter } from 'next/navigation';
 
 export function Header() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const dispatch = useDispatch();
+  const router = useRouter();
+  const { isAuthenticated, user } = useSelector((state: RootState) => state.auth);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -18,6 +27,11 @@ export function Header() {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  const handleLogout = () => {
+    dispatch(logout());
+    router.push('/auth');
+  };
 
   const navLinks = [
     { href: "/bookings", label: "My Bookings" },
@@ -41,7 +55,28 @@ export function Header() {
             {navLinks.map(link => (
               <Button key={link.href} variant="ghost" asChild className={cn(isScrolled ? "text-foreground" : "text-white hover:bg-white/10 hover:text-white")}><Link href={link.href}>{link.label}</Link></Button>
             ))}
-             <Button variant="ghost" className={cn(isScrolled ? "text-foreground" : "text-white hover:bg-white/10 hover:text-white")}>Sign In</Button>
+            {isAuthenticated && user ? (
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+                    <Avatar className="h-8 w-8">
+                      <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
+                    </Avatar>
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-56" align="end" forceMount>
+                  <div className="flex flex-col space-y-2 p-2">
+                    <p className="text-sm font-medium leading-none">{user.name}</p>
+                    <p className="text-xs leading-none text-muted-foreground">
+                      {user.email}
+                    </p>
+                  </div>
+                  <Button onClick={handleLogout} className="w-full">Sign Out</Button>
+                </PopoverContent>
+              </Popover>
+            ) : (
+              <Button variant="ghost" asChild className={cn(isScrolled ? "text-foreground" : "text-white hover:bg-white/10 hover:text-white")}><Link href="/auth">Sign In</Link></Button>
+            )}
           </nav>
           <div className="md:hidden">
             <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
@@ -73,7 +108,11 @@ export function Header() {
                         </nav>
                     </div>
                     <div className="p-4 border-t">
-                        <Button className="w-full">Sign In</Button>
+                        {isAuthenticated ? (
+                            <Button onClick={handleLogout} className="w-full">Sign Out</Button>
+                        ) : (
+                            <Button asChild className="w-full"><Link href="/auth">Sign In</Link></Button>
+                        )}
                     </div>
                  </div>
               </SheetContent>
