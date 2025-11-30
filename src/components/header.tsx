@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { Plane, Menu, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useEffect, useState } from 'react';
-import { Sheet, SheetContent, SheetTrigger } from './ui/sheet';
+import { Sheet, SheetContent, SheetTrigger, SheetTitle } from './ui/sheet';
 import { cn } from '@/lib/utils';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '@/store/store';
@@ -80,7 +80,7 @@ export function Header() {
                   </div>
                   <Button 
                     onClick={handleLogout} 
-                    className="w-full flex items-center justify-center gap-2"
+                    className="w-full flex items-center justify-center gap-2 cursor-pointer"
                     disabled={isSigningOut}
                   >
                     {isSigningOut ? (
@@ -105,6 +105,7 @@ export function Header() {
                 </Button>
               </SheetTrigger>
               <SheetContent side="left" className="w-full bg-card text-foreground">
+                <SheetTitle className="sr-only">Mobile Navigation Menu</SheetTitle>
                  <div className="flex flex-col h-full">
                     <div className="flex items-center justify-between p-4 border-b">
                          <Link href="/" className="flex items-center gap-2" onClick={() => setIsMobileMenuOpen(false)}>
@@ -129,7 +130,7 @@ export function Header() {
                         {isAuthenticated ? (
                             <Button 
                     onClick={handleLogout} 
-                    className="w-full flex items-center justify-center gap-2"
+                    className="w-full flex items-center justify-center gap-2 cursor-pointer"
                     disabled={isSigningOut}
                   >
                     {isSigningOut ? (
@@ -140,7 +141,7 @@ export function Header() {
                     ) : 'Sign Out'}
                   </Button>
                         ) : (
-                            <Button asChild className="w-full"><Link href="/auth">Sign In</Link></Button>
+                            <Button asChild className="w-full cursor-pointer"><Link href="/auth">Sign In</Link></Button>
                         )}
                     </div>
                  </div>
