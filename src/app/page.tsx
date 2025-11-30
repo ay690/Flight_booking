@@ -2,15 +2,64 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
+import dynamic from 'next/dynamic';
+import { Suspense } from 'react';
 import { useRef, useState } from 'react';
-import { Header } from '@/components/header';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { Card, CardContent } from '@/components/ui/card';
-import { BookingForm } from '@/components/booking-form';
 import { Button } from '@/components/ui/button';
-import { Award, ShieldCheck, Tag, Twitter, Facebook, Instagram } from 'lucide-react';
+import { Award, ShieldCheck, Tag, Twitter, Facebook, Instagram, Plane } from 'lucide-react';
 import { destinations } from '@/lib/data';
 import withAuth from '@/components/auth/withAuth';
+
+// Lazy load the Header component
+const LazyHeader = dynamic(
+  () => import('@/components/header').then((mod) => mod.Header),
+  { 
+    loading: () => (
+      <div className="fixed top-0 left-0 right-0 z-30 bg-card shadow-md">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center">
+          <div className="flex items-center gap-2">
+            <Plane className="h-8 w-8" />
+            <span className="text-xl font-bold tracking-tight">SkyRoute</span>
+          </div>
+        </div>
+      </div>
+    ),
+    ssr: false,
+  }
+);
+
+// Lazy load the BookingForm component
+const LazyBookingForm = dynamic(
+  () => import('@/components/booking-form').then((mod) => mod.BookingForm),
+  {
+    loading: () => (
+      <div className="max-w-4xl mx-auto mt-8">
+        <Card className="p-8">
+          <div className="space-y-6">
+            <div className="space-y-4">
+              <div className="h-6 bg-muted rounded w-3/4 animate-pulse"></div>
+              <div className="h-4 bg-muted rounded w-1/2 animate-pulse"></div>
+            </div>
+            <div className="grid md:grid-cols-2 gap-6">
+              <div className="space-y-4">
+                <div className="h-10 bg-muted rounded animate-pulse"></div>
+                <div className="h-10 bg-muted rounded animate-pulse"></div>
+              </div>
+              <div className="space-y-4">
+                <div className="h-10 bg-muted rounded animate-pulse"></div>
+                <div className="h-10 bg-muted rounded animate-pulse"></div>
+              </div>
+            </div>
+            <div className="h-12 bg-muted rounded animate-pulse"></div>
+          </div>
+        </Card>
+      </div>
+    ),
+    ssr: false,
+  }
+);
 
 function Home() {
   const formSectionRef = useRef<HTMLDivElement | null>(null);
@@ -32,7 +81,7 @@ function Home() {
 
   return (
     <div className="flex flex-col min-h-screen bg-background">
-      <Header />
+      <LazyHeader />
       <main className="flex-1">
         <section className="relative h-[80vh] min-h-[500px] flex items-center justify-center text-white">
           {heroImage && (
@@ -57,7 +106,31 @@ function Home() {
         </section>
 
         <section ref={formSectionRef} id="booking-form" className='p-2 relative z-20 -mt-25 md:-mt-32'>
-          <BookingForm prefillTo={prefillTo} />
+          <Suspense fallback={
+            <div className="max-w-4xl mx-auto mt-8">
+              <Card className="p-8">
+                <div className="space-y-6">
+                  <div className="space-y-4">
+                    <div className="h-6 bg-muted rounded w-3/4 animate-pulse"></div>
+                    <div className="h-4 bg-muted rounded w-1/2 animate-pulse"></div>
+                  </div>
+                  <div className="grid md:grid-cols-2 gap-6">
+                    <div className="space-y-4">
+                      <div className="h-10 bg-muted rounded animate-pulse"></div>
+                      <div className="h-10 bg-muted rounded animate-pulse"></div>
+                    </div>
+                    <div className="space-y-4">
+                      <div className="h-10 bg-muted rounded animate-pulse"></div>
+                      <div className="h-10 bg-muted rounded animate-pulse"></div>
+                    </div>
+                  </div>
+                  <div className="h-12 bg-muted rounded animate-pulse"></div>
+                </div>
+              </Card>
+            </div>
+          }>
+            <LazyBookingForm prefillTo={prefillTo} />
+          </Suspense>
         </section>
 
         <section className="py-16 md:py-24 bg-background p-1">
