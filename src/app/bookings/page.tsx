@@ -1,7 +1,10 @@
 "use client";
 
 import { useSelector } from 'react-redux';
+import type { AppDispatch } from '@/store/store';
 import { RootState } from '@/store/store';
+import { useDispatch } from 'react-redux';
+import { removeBooking } from '@/store/slices/bookingSlice';
 import { Header } from "@/components/header";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -10,7 +13,14 @@ import Link from "next/link";
 import { format } from "date-fns";
 
 export default function BookingsPage() {
+  const dispatch = useDispatch<AppDispatch>();
   const bookings = useSelector((state: RootState) => state.booking.bookings);
+
+  const handleCancelBooking = (index: number) => {
+    if (confirm('Are you sure you want to cancel this booking?')) {
+      dispatch(removeBooking(index));
+    }
+  };
 
   return (
     <div className="flex flex-col min-h-screen bg-blue-200">
@@ -37,9 +47,18 @@ export default function BookingsPage() {
                                 {b.tripType === 'one-way' ? 'One Way' : 'Round Trip'}
                             </CardDescription>
                         </div>
-                        <Link href="/confirmation">
-                            <Button className='cursor-pointer'>View Details</Button>
-                        </Link>
+                        <div className="flex gap-2">
+                            <Button 
+                                variant="outline" 
+                                className='cursor-pointer hover:bg-destructive hover:text-destructive-foreground'
+                                onClick={() => handleCancelBooking(index)}
+                            >
+                                Cancel
+                            </Button>
+                            <Link href="/confirmation">
+                                <Button className='cursor-pointer'>View Details</Button>
+                            </Link>
+                        </div>
                     </div>
                   </CardHeader>
                   <CardContent className="grid sm:grid-cols-3 gap-4">

@@ -108,9 +108,13 @@ const bookingSlice = createSlice({
         );
       }
     },
+    
+    removeBooking: (state, action: PayloadAction<number>) => {
+      state.bookings = state.bookings.filter((_, index) => index !== action.payload);
+    },
   },
 });
 
-export const { setBooking, updateBooking, confirmBooking, rehydrateBooking } = bookingSlice.actions;
+export const { setBooking, updateBooking, confirmBooking, rehydrateBooking, removeBooking } = bookingSlice.actions;
 
 export default bookingSlice.reducer;
