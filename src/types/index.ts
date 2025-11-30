@@ -36,4 +36,5 @@ export interface BookingData extends Omit<BookingDetails, 'passengers' | 'depart
   passengers: Passenger[];
   bags: number;
   flightDetails?: FlightDetails;
+  bookingDate?: string;
 }

@@ -1,6 +1,6 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
-interface AuthState {
+export interface AuthState {
   isAuthenticated: boolean;
   user: {
     name: string;
@@ -24,6 +24,10 @@ const authSlice = createSlice({
     logout: (state) => {
       state.isAuthenticated = false;
       state.user = null;
+      // Clear auth data from localStorage
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('flight_booking_auth');
+      }
     },
   },
 });

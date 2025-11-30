@@ -9,6 +9,23 @@ interface BookingState {
   currentBooking: BookingData | null;
 }
 
+const parseDate = (dateStr: string | Date | null): Date | null => {
+  if (!dateStr) return null;
+  if (dateStr instanceof Date) return dateStr;
+  return new Date(dateStr);
+};
+
+const parseBookingData = (data: any): BookingData | null => {
+  if (!data) return null;
+  return {
+    ...data,
+    departureDate: parseDate(data.departureDate),
+    returnDate: data.returnDate ? parseDate(data.returnDate) : null,
+    passengers: data.passengers || [],
+    flightDetails: data.flightDetails || null,
+  };
+};
+
 const initialState: BookingState = {
   bookings: [],
   currentBooking: null,
@@ -31,15 +48,20 @@ const bookingSlice = createSlice({
       );
 
       const payload = action.payload;
+      const departureDate = isDate(payload.departureDate) 
+        ? payload.departureDate 
+        : new Date(payload.departureDate);
+      
+      const returnDate = payload.returnDate 
+        ? (isDate(payload.returnDate) 
+            ? payload.returnDate 
+            : new Date(payload.returnDate))
+        : null;
 
       state.currentBooking = {
         ...payload,
-        departureDate: isDate(payload.departureDate)
-          ? payload.departureDate.toISOString()
-          : payload.departureDate,
-        returnDate: isDate(payload.returnDate)
-          ? payload.returnDate.toISOString()
-          : payload.returnDate,
+        departureDate: departureDate.toISOString(),
+        returnDate: returnDate?.toISOString(),
         passengers,
         bags: 0,
       };
@@ -50,11 +72,17 @@ const bookingSlice = createSlice({
         const payload = action.payload;
         const updatedBooking = { ...state.currentBooking, ...payload };
 
-        if (payload.departureDate && isDate(payload.departureDate)) {
-          updatedBooking.departureDate = payload.departureDate.toISOString();
+        if (payload.departureDate) {
+          updatedBooking.departureDate = isDate(payload.departureDate)
+            ? payload.departureDate.toISOString()
+            : payload.departureDate;
         }
-        if (payload.returnDate && isDate(payload.returnDate)) {
-          updatedBooking.returnDate = payload.returnDate.toISOString();
+        if (payload.returnDate !== undefined) {
+          updatedBooking.returnDate = payload.returnDate !== null && payload.returnDate !== ''
+            ? (isDate(payload.returnDate)
+                ? payload.returnDate.toISOString()
+                : String(payload.returnDate))
+            : undefined;
         }
 
         state.currentBooking = updatedBooking;
@@ -63,13 +91,26 @@ const bookingSlice = createSlice({
 
     confirmBooking: (state) => {
       if (state.currentBooking) {
-        state.bookings.push(state.currentBooking);
+        state.bookings.push({
+          ...state.currentBooking,
+          bookingDate: new Date().toISOString()
+        });
         state.currentBooking = null;
+      }
+    },
+    rehydrateBooking: (state, action: PayloadAction<BookingState>) => {
+      if (action.payload.currentBooking) {
+        state.currentBooking = parseBookingData(action.payload.currentBooking);
+      }
+      if (action.payload.bookings) {
+        state.bookings = action.payload.bookings.map(booking => 
+          parseBookingData(booking) || booking
+        );
       }
     },
   },
 });
 
-export const { setBooking, updateBooking, confirmBooking } = bookingSlice.actions;
+export const { setBooking, updateBooking, confirmBooking, rehydrateBooking } = bookingSlice.actions;
 
 export default bookingSlice.reducer;
