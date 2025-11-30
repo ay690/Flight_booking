@@ -9,13 +9,15 @@ import { cn } from '@/lib/utils';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '@/store/store';
 import { logout } from '@/store/slices/authSlice';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Loader2 } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useRouter } from 'next/navigation';
 
 export function Header() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isSigningOut, setIsSigningOut] = useState(false);
   const dispatch = useDispatch();
   const router = useRouter();
   const { isAuthenticated, user } = useSelector((state: RootState) => state.auth);
@@ -28,9 +30,14 @@ export function Header() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const handleLogout = () => {
-    dispatch(logout());
-    router.push('/auth');
+  const handleLogout = async () => {
+    try {
+      setIsSigningOut(true);
+      await dispatch(logout());
+      await router.push('/auth');
+    } finally {
+      setIsSigningOut(false);
+    }
   };
 
   const navLinks = [
@@ -71,7 +78,18 @@ export function Header() {
                       {user.email}
                     </p>
                   </div>
-                  <Button onClick={handleLogout} className="w-full">Sign Out</Button>
+                  <Button 
+                    onClick={handleLogout} 
+                    className="w-full flex items-center justify-center gap-2"
+                    disabled={isSigningOut}
+                  >
+                    {isSigningOut ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Signing out...
+                      </>
+                    ) : 'Sign Out'}
+                  </Button>
                 </PopoverContent>
               </Popover>
             ) : (
@@ -109,7 +127,18 @@ export function Header() {
                     </div>
                     <div className="p-4 border-t">
                         {isAuthenticated ? (
-                            <Button onClick={handleLogout} className="w-full">Sign Out</Button>
+                            <Button 
+                    onClick={handleLogout} 
+                    className="w-full flex items-center justify-center gap-2"
+                    disabled={isSigningOut}
+                  >
+                    {isSigningOut ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Signing out...
+                      </>
+                    ) : 'Sign Out'}
+                  </Button>
                         ) : (
                             <Button asChild className="w-full"><Link href="/auth">Sign In</Link></Button>
                         )}

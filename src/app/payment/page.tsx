@@ -1,6 +1,7 @@
 'use client';
 
-import { Header } from '@/components/header';
+import dynamic from 'next/dynamic';
+import { Suspense } from 'react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import {
@@ -10,7 +11,7 @@ import {
   CardTitle,
   CardDescription,
 } from '@/components/ui/card';
-import { IndianRupee, Luggage, Plus, Minus, User } from 'lucide-react';
+import { IndianRupee, Luggage, Plus, Minus, User, Plane } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { Input } from '@/components/ui/input';
@@ -21,7 +22,42 @@ import { AppDispatch, RootState } from '@/store/store';
 import { updateBooking } from '@/store/slices/bookingSlice';
 import { loadStripe, type StripeElementsOptions } from '@stripe/stripe-js';
 import { Elements } from '@stripe/react-stripe-js';
-import CheckoutForm from '@/components/checkout-form';
+
+// Lazy load the Header component
+const LazyHeader = dynamic(
+  () => import('@/components/header').then((mod) => mod.Header),
+  { 
+    loading: () => (
+      <div className="fixed top-0 left-0 right-0 z-30 bg-card shadow-md">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center">
+          <div className="flex items-center gap-2">
+            <Plane className="h-8 w-8" />
+            <span className="text-xl font-bold tracking-tight">SkyRoute</span>
+          </div>
+        </div>
+      </div>
+    ),
+    ssr: false,
+  }
+);
+
+// Lazy load the CheckoutForm component
+const LazyCheckoutForm = dynamic(
+  () => import('@/components/checkout-form').then((mod) => mod.default),
+  {
+    loading: () => (
+      <div className="space-y-4">
+        <div className="h-12 bg-muted rounded animate-pulse"></div>
+        <div className="space-y-2">
+          <div className="h-4 bg-muted rounded w-3/4 animate-pulse"></div>
+          <div className="h-4 bg-muted rounded w-1/2 animate-pulse"></div>
+        </div>
+        <div className="h-10 bg-muted rounded animate-pulse"></div>
+      </div>
+    ),
+    ssr: false,
+  }
+);
 
 const stripePromise = loadStripe(
   process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!
@@ -163,7 +199,7 @@ export default function PaymentPage() {
 
   return (
     <div className="flex flex-col min-h-screen bg-background">
-      <Header />
+      <LazyHeader />
       <main className="flex-1 container mx-auto px-4 py-24">
         <div className="max-w-xl mx-auto">
           <Card>
@@ -336,16 +372,27 @@ export default function PaymentPage() {
                 </form>
 
                 {clientSecret && (
-                  <Elements
-                    key={clientSecret}
-                    options={options}
-                    stripe={stripePromise}
-                  >
-                    <CheckoutForm
-                      grandTotal={grandTotal}
-                      clientSecret={clientSecret}
-                    />
-                  </Elements>
+                  <Suspense fallback={
+                    <div className="space-y-4">
+                      <div className="h-12 bg-muted rounded animate-pulse"></div>
+                      <div className="space-y-2">
+                        <div className="h-4 bg-muted rounded w-3/4 animate-pulse"></div>
+                        <div className="h-4 bg-muted rounded w-1/2 animate-pulse"></div>
+                      </div>
+                      <div className="h-10 bg-muted rounded animate-pulse"></div>
+                    </div>
+                  }>
+                    <Elements
+                      key={clientSecret}
+                      options={options}
+                      stripe={stripePromise}
+                    >
+                      <LazyCheckoutForm
+                        grandTotal={grandTotal}
+                        clientSecret={clientSecret}
+                      />
+                    </Elements>
+                  </Suspense>
                 )}
               </div>
             </CardContent>

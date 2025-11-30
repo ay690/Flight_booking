@@ -115,7 +115,7 @@ export default function CheckoutForm({
       switch (paymentIntent.status) {
         case 'succeeded':
           console.log('Payment succeeded!', paymentIntent);
-          toast.success('Payment successful!');
+          toast.success(`Payment successful! You can check your bookings in 'My Bookings'`);
           dispatch(confirmBooking());
           router.push('/payment/success');
           break;

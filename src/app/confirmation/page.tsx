@@ -1,19 +1,69 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
+import dynamic from 'next/dynamic';
+import { Suspense } from 'react';
 import { useRouter } from "next/navigation";
 import { Download, Plane, Luggage, Mail, Loader2, IndianRupee } from "lucide-react";
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store/store';
-import { Header } from "@/components/header";
-import Ticket from "@/components/ticket";
-import BaggageTag from "@/components/baggage-tag";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { printElement } from "@/lib/print";
 import { toast } from "sonner";
+
+// Lazy load the Header component
+const LazyHeader = dynamic(
+  () => import('@/components/header').then((mod) => mod.Header),
+  { 
+    loading: () => (
+      <div className="fixed top-0 left-0 right-0 z-30 bg-card shadow-md">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center">
+          <div className="flex items-center gap-2">
+            <Plane className="h-8 w-8" />
+            <span className="text-xl font-bold tracking-tight">SkyRoute</span>
+          </div>
+        </div>
+      </div>
+    ),
+    ssr: false,
+  }
+);
+
+// Lazy load the Ticket component
+const LazyTicket = dynamic(
+  () => import('@/components/ticket').then((mod) => mod.default),
+  {
+    loading: () => (
+      <div className="bg-white border-2 border-dashed border-gray-300 rounded-lg p-6 animate-pulse">
+        <div className="space-y-4">
+          <div className="h-6 bg-gray-200 rounded w-3/4"></div>
+          <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+          <div className="h-20 bg-gray-200 rounded"></div>
+        </div>
+      </div>
+    ),
+    ssr: false,
+  }
+);
+
+// Lazy load the BaggageTag component
+const LazyBaggageTag = dynamic(
+  () => import('@/components/baggage-tag').then((mod) => mod.default),
+  {
+    loading: () => (
+      <div className="bg-white border-2 border-dashed border-gray-300 rounded-lg p-4 animate-pulse">
+        <div className="space-y-2">
+          <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+          <div className="h-8 bg-gray-200 rounded"></div>
+        </div>
+      </div>
+    ),
+    ssr: false,
+  }
+);
 
 const BAGGAGE_PRICE_PER_UNIT = 800;
 
@@ -62,7 +112,7 @@ export default function ConfirmationPage() {
 
   return (
     <div className="flex flex-col min-h-screen bg-background">
-      <Header />
+      <LazyHeader />
       <main className="flex-1 container mx-auto px-4 py-24">
         <div className="max-w-4xl mx-auto space-y-8">
           <div className="text-center">
@@ -172,7 +222,19 @@ export default function ConfirmationPage() {
 
                 <div ref={ticketsRef} className="space-y-4 bg-background">
                   {booking.passengers.map(
-                    (p) => p.seat && <Ticket key={p.id} booking={booking} passenger={p} />
+                    (p) => p.seat && (
+                      <Suspense key={p.id} fallback={
+                        <div className="bg-white border-2 border-dashed border-gray-300 rounded-lg p-6 animate-pulse">
+                          <div className="space-y-4">
+                            <div className="h-6 bg-gray-200 rounded w-3/4"></div>
+                            <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+                            <div className="h-20 bg-gray-200 rounded"></div>
+                          </div>
+                        </div>
+                      }>
+                        <LazyTicket booking={booking} passenger={p} />
+                      </Suspense>
+                    )
                   )}
                 </div>
               </div>
@@ -198,12 +260,20 @@ export default function ConfirmationPage() {
                 {(booking.bags || 0) > 0 ? (
                   <div ref={baggageTagsRef} className="space-y-4 bg-background">
                     {Array.from({ length: booking.bags || 0 }).map((_, i) => (
-                      <BaggageTag
-                        key={i}
-                        booking={booking}
-                        passenger={booking.passengers[0]}
-                        tagNumber={i + 1}
-                      />
+                      <Suspense key={i} fallback={
+                        <div className="bg-white border-2 border-dashed border-gray-300 rounded-lg p-4 animate-pulse">
+                          <div className="space-y-2">
+                            <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+                            <div className="h-8 bg-gray-200 rounded"></div>
+                          </div>
+                        </div>
+                      }>
+                        <LazyBaggageTag
+                          booking={booking}
+                          passenger={booking.passengers[0]}
+                          tagNumber={i + 1}
+                        />
+                      </Suspense>
                     ))}
                   </div>
                 ) : (
